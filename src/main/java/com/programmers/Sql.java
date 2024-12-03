@@ -70,6 +70,15 @@ public class Sql {
         return modify();
     }
 
+    private void getData(Map<String, Object> row, ResultSet resultSet) throws SQLException {
+        row.put("id", resultSet.getLong(1));
+        row.put("createdDate", resultSet.getTimestamp(2).toLocalDateTime());
+        row.put("modifiedDate", resultSet.getTimestamp(3).toLocalDateTime());
+        row.put("title", resultSet.getString(4));
+        row.put("body", resultSet.getString(5));
+        row.put("isBlind", resultSet.getBoolean(6));
+    }
+
     public List<Map<String, Object>> selectRows(){
         try(PreparedStatement preparedStatement = connection.prepareStatement(stringBuilder.toString())){
             for(int i = 0; i < parameters.size(); i++){
@@ -80,12 +89,7 @@ public class Sql {
 
             while(resultSet.next()){
                 Map<String, Object> row = new HashMap<>();
-                row.put("id", resultSet.getLong(1));
-                row.put("createdDate", resultSet.getTimestamp(2).toLocalDateTime());
-                row.put("modifiedDate", resultSet.getTimestamp(3).toLocalDateTime());
-                row.put("title", resultSet.getString(4));
-                row.put("body", resultSet.getString(5));
-                row.put("isBlind", resultSet.getBoolean(6));
+                getData(row, resultSet);
                 rows.add(row);
             }
             return rows;
@@ -103,12 +107,7 @@ public class Sql {
             Map<String, Object> row = new HashMap<>();
 
             if(resultSet.next()){
-                row.put("id", resultSet.getLong(1));
-                row.put("createdDate", resultSet.getTimestamp(2).toLocalDateTime());
-                row.put("modifiedDate", resultSet.getTimestamp(3).toLocalDateTime());
-                row.put("title", resultSet.getString(4));
-                row.put("body", resultSet.getString(5));
-                row.put("isBlind", resultSet.getBoolean(6));
+               getData(row, resultSet);
             }
             return row;
         }catch (SQLException e){
