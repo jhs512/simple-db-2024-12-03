@@ -115,11 +115,11 @@ public class Sql {
         }
     }
 
-    public LocalDateTime selectDatetime(){
+    private <T> T select(Class<T> type){
         try(PreparedStatement preparedStatement = connection.prepareStatement(stringBuilder.toString())) {
             ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()){
-                return resultSet.getTimestamp(1).toLocalDateTime();
+                return type.cast(resultSet.getObject(1));
             }else {
                 return null;
             }
@@ -128,42 +128,19 @@ public class Sql {
         }
     }
 
-    public long selectLong(){
-        try(PreparedStatement preparedStatement = connection.prepareStatement(stringBuilder.toString())) {
-            ResultSet resultSet = preparedStatement.executeQuery();
-            if(resultSet.next()){
-                return resultSet.getLong(1);
-            }else {
-                return -1;
-            }
-        }catch (SQLException e){
-            throw new RuntimeException(e);
-        }
+    public LocalDateTime selectDatetime(){
+        return select(LocalDateTime.class);
+    }
+
+    public Long selectLong(){
+        return select(Long.class);
     }
 
     public String selectString(){
-        try(PreparedStatement preparedStatement = connection.prepareStatement(stringBuilder.toString())) {
-            ResultSet resultSet = preparedStatement.executeQuery();
-            if(resultSet.next()){
-                return resultSet.getString(1);
-            }else {
-                return null;
-            }
-        }catch (SQLException e){
-            throw new RuntimeException(e);
-        }
+        return select(String.class);
     }
 
     public Boolean selectBoolean(){
-        try(PreparedStatement preparedStatement = connection.prepareStatement(stringBuilder.toString())) {
-            ResultSet resultSet = preparedStatement.executeQuery();
-            if(resultSet.next()){
-                return resultSet.getBoolean(1);
-            }else {
-                return null;
-            }
-        }catch (SQLException e){
-            throw new RuntimeException(e);
-        }
+        return select(Boolean.class);
     }
 }
