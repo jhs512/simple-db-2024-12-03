@@ -34,9 +34,15 @@ public class Sql {
 
     public Sql appendIn(String query, Object... args){
         String in = Arrays.stream(args).map(Object::toString).collect(Collectors.joining(","));
-        stringBuilder.append(" ").append(query.replace("IN (?)", "IN (" + in + ")"));
+        stringBuilder.append(" ").append(query.replace("?", in));
         return this;
     }
+
+//    public Sql appendIn(String query, Long[] logs){
+//        String in = Arrays.stream(logs).map(Object::toString).collect(Collectors.joining(","));
+//        stringBuilder.append(" ").append(query.replace("IN (?)", "IN (" + in + ")"));
+//        return this;
+//    }
 
     public long insert(){
         try(PreparedStatement preparedStatement = connection.prepareStatement(stringBuilder.toString(),
@@ -148,6 +154,22 @@ public class Sql {
 
     public Long selectLong(){
         return select(Long.class);
+    }
+
+    public List<Long> selectLongs(){
+        try(PreparedStatement preparedStatement = connection.prepareStatement(stringBuilder.toString())){
+            for(int i = 0; i < parameters.size(); i++){
+                preparedStatement.setObject(i + 1, parameters.get(i));
+            }
+            ResultSet resultSet = preparedStatement.executeQuery();
+            List<Long> rows = new ArrayList<>();
+            while(resultSet.next()){
+                rows.add(resultSet.getLong(1));
+            }
+            return rows;
+        }catch (SQLException e){
+            throw new RuntimeException(e);
+        }
     }
 
     public String selectString(){
