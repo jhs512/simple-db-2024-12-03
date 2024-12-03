@@ -128,4 +128,17 @@ public class Sql {
             throw new RuntimeException(e);
         }
     }
+
+    public long selectLong(){
+        try(PreparedStatement preparedStatement = connection.prepareStatement(stringBuilder.toString())) {
+            ResultSet resultSet = preparedStatement.executeQuery();
+            if(resultSet.next()){
+                return resultSet.getLong(1);
+            }else {
+                return -1;
+            }
+        }catch (SQLException e){
+            throw new RuntimeException(e);
+        }
+    }
 }
