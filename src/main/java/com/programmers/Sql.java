@@ -140,4 +140,30 @@ public class Sql {
             throw new RuntimeException(e);
         }
     }
+
+    public String selectString(){
+        try(PreparedStatement preparedStatement = connection.prepareStatement(stringBuilder.toString())) {
+            ResultSet resultSet = preparedStatement.executeQuery();
+            if(resultSet.next()){
+                return resultSet.getString(1);
+            }else {
+                return null;
+            }
+        }catch (SQLException e){
+            throw new RuntimeException(e);
+        }
+    }
+
+    public Boolean selectBoolean(){
+        try(PreparedStatement preparedStatement = connection.prepareStatement(stringBuilder.toString())) {
+            ResultSet resultSet = preparedStatement.executeQuery();
+            if(resultSet.next()){
+                return resultSet.getBoolean(1);
+            }else {
+                return null;
+            }
+        }catch (SQLException e){
+            throw new RuntimeException(e);
+        }
+    }
 }
