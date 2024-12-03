@@ -1,5 +1,6 @@
-package com.programmers;
+package com.programmers.databases;
 
+import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -37,12 +38,6 @@ public class Sql {
         stringBuilder.append(" ").append(query.replace("?", in));
         return this;
     }
-
-//    public Sql appendIn(String query, Long[] logs){
-//        String in = Arrays.stream(logs).map(Object::toString).collect(Collectors.joining(","));
-//        stringBuilder.append(" ").append(query.replace("IN (?)", "IN (" + in + ")"));
-//        return this;
-//    }
 
     public long insert(){
         try(PreparedStatement preparedStatement = connection.prepareStatement(stringBuilder.toString(),
@@ -107,6 +102,32 @@ public class Sql {
             }
             return rows;
         }catch (SQLException e){
+            throw new RuntimeException(e);
+        }
+    }
+
+    public <T> List<T> selectRows(Class<T> type){
+        try(PreparedStatement preparedStatement = connection.prepareStatement(stringBuilder.toString())){
+            for(int i = 0; i < parameters.size(); i++){
+                preparedStatement.setObject(i + 1, parameters.get(i));
+            }
+            ResultSet resultSet = preparedStatement.executeQuery();
+            List<T> list = new ArrayList<>();
+
+            while(resultSet.next()){
+                T instance = type.getDeclaredConstructor().newInstance();
+
+                for (Field field : type.getDeclaredFields()) {
+                    field.setAccessible(true);
+                    Object value = resultSet.getObject(field.getName());
+                    field.set(instance, value);
+                    field.setAccessible(false);
+                }
+
+                list.add(instance);  // 리스트
+            }
+            return list;
+        }catch (SQLException | ReflectiveOperationException e){
             throw new RuntimeException(e);
         }
     }

@@ -1,5 +1,6 @@
-import com.programmers.SimpleDb;
-import com.programmers.Sql;
+import com.programmers.databases.SimpleDb;
+import com.programmers.databases.Sql;
+import com.programmers.domain.Article;
 import org.junit.jupiter.api.*;
 
 import java.time.LocalDateTime;
@@ -7,11 +8,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -358,36 +354,36 @@ public class SimpleDbTest {
 
         assertThat(foundIds).isEqualTo(Arrays.stream(ids).toList());
     }
-//
-//    @Test
-//    @DisplayName("selectRows, Article")
-//    public void t015() {
-//        Sql sql = simpleDb.genSql();
-//        /*
-//        == rawSql ==
-//        SELECT *
-//        FROM article
-//        ORDER BY id ASC
-//        LIMIT 3
-//        */
-//        sql.append("SELECT * FROM article ORDER BY id ASC LIMIT 3");
-//        List<Article> articleRows = sql.selectRows(Article.class);
-//
-//        IntStream.range(0, articleRows.size()).forEach(i -> {
-//            long id = i + 1;
-//
-//            Article article = articleRows.get(i);
-//
-//            assertThat(article.getId()).isEqualTo(id);
-//            assertThat(article.getTitle()).isEqualTo("제목%d".formatted(id));
-//            assertThat(article.getBody()).isEqualTo("내용%d".formatted(id));
-//            assertThat(article.getCreatedDate()).isInstanceOf(LocalDateTime.class);
-//            assertThat(article.getCreatedDate()).isNotNull();
-//            assertThat(article.getModifiedDate()).isInstanceOf(LocalDateTime.class);
-//            assertThat(article.getModifiedDate()).isNotNull();
-//            assertThat(article.isBlind()).isEqualTo(false);
-//        });
-//    }
+
+    @Test
+    @DisplayName("selectRows, Article")
+    public void t015() {
+        Sql sql = simpleDb.genSql();
+        /*
+        == rawSql ==
+        SELECT *
+        FROM article
+        ORDER BY id ASC
+        LIMIT 3
+        */
+        sql.append("SELECT * FROM article ORDER BY id ASC LIMIT 3");
+        List<Article> articleRows = sql.selectRows(Article.class);
+
+        IntStream.range(0, articleRows.size()).forEach(i -> {
+            long id = i + 1;
+
+            Article article = articleRows.get(i);
+
+            assertThat(article.getId()).isEqualTo(id);
+            assertThat(article.getTitle()).isEqualTo("제목%d".formatted(id));
+            assertThat(article.getBody()).isEqualTo("내용%d".formatted(id));
+            assertThat(article.getCreatedDate()).isInstanceOf(LocalDateTime.class);
+            assertThat(article.getCreatedDate()).isNotNull();
+            assertThat(article.getModifiedDate()).isInstanceOf(LocalDateTime.class);
+            assertThat(article.getModifiedDate()).isNotNull();
+            assertThat(article.isBlind()).isEqualTo(false);
+        });
+    }
 //
 //    @Test
 //    @DisplayName("selectRow, Article")
