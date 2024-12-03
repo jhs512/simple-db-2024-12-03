@@ -266,76 +266,76 @@ public class SimpleDbTest {
 
         assertThat(isBlind).isEqualTo(false);
     }
-//
-//    @Test
-//    @DisplayName("selectBoolean, 2nd")
-//    public void t010() {
-//        Sql sql = simpleDb.genSql();
-//        /*
-//        == rawSql ==
-//        SELECT 1 = 1
-//        */
-//        sql.append("SELECT 1 = 1");
-//
-//        Boolean isBlind = sql.selectBoolean();
-//
-//        assertThat(isBlind).isEqualTo(true);
-//    }
-//
-//    @Test
-//    @DisplayName("selectBoolean, 3rd")
-//    public void t011() {
-//        Sql sql = simpleDb.genSql();
-//        /*
-//        == rawSql ==
-//        SELECT 1 = 0
-//        */
-//        sql.append("SELECT 1 = 0");
-//
-//        Boolean isBlind = sql.selectBoolean();
-//
-//        assertThat(isBlind).isEqualTo(false);
-//    }
-//
-//    @Test
-//    @DisplayName("select, LIKE 사용법")
-//    public void t012() {
-//        Sql sql = simpleDb.genSql();
-//        /*
-//        == rawSql ==
-//        SELECT COUNT(*)
-//        FROM article
-//        WHERE id BETWEEN '1' AND '3'
-//        AND title LIKE CONCAT('%', '제목' '%')
-//        */
-//        sql.append("SELECT COUNT(*)")
-//                .append("FROM article")
-//                .append("WHERE id BETWEEN ? AND ?", 1, 3)
-//                .append("AND title LIKE CONCAT('%', ? '%')", "제목");
-//
-//        long count = sql.selectLong();
-//
-//        assertThat(count).isEqualTo(3);
-//    }
-//
-//    @Test
-//    @DisplayName("appendIn")
-//    public void t013() {
-//        Sql sql = simpleDb.genSql();
-//        /*
-//        == rawSql ==
-//        SELECT COUNT(*)
-//        FROM article
-//        WHERE id IN ('1', '2', '3')
-//        */
-//        sql.append("SELECT COUNT(*)")
-//                .append("FROM article")
-//                .appendIn("WHERE id IN (?)", 1, 2, 3);
-//
-//        long count = sql.selectLong();
-//
-//        assertThat(count).isEqualTo(3);
-//    }
+
+    @Test
+    @DisplayName("selectBoolean, 2nd")
+    public void t010() {
+        Sql sql = simpleDb.genSql();
+        /*
+        == rawSql ==
+        SELECT 1 = 1
+        */
+        sql.append("SELECT 1 = 1");
+
+        Boolean isBlind = sql.selectBoolean();
+
+        assertThat(isBlind).isEqualTo(true);
+    }
+
+    @Test
+    @DisplayName("selectBoolean, 3rd")
+    public void t011() {
+        Sql sql = simpleDb.genSql();
+        /*
+        == rawSql ==
+        SELECT 1 = 0
+        */
+        sql.append("SELECT 1 = 0");
+
+        Boolean isBlind = sql.selectBoolean();
+
+        assertThat(isBlind).isEqualTo(false);
+    }
+
+    @Test
+    @DisplayName("select, LIKE 사용법")
+    public void t012() {
+        Sql sql = simpleDb.genSql();
+        /*
+        == rawSql ==
+        SELECT COUNT(*)
+        FROM article
+        WHERE id BETWEEN '1' AND '3'
+        AND title LIKE CONCAT('%', '제목' '%')
+        */
+        sql.append("SELECT COUNT(*)")
+                .append("FROM article")
+                .append("WHERE id BETWEEN ? AND ?", 1, 3)
+                .append("AND title LIKE CONCAT('%', ? '%')", "제목");
+
+        long count = sql.selectLong();
+
+        assertThat(count).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("appendIn")
+    public void t013() {
+        Sql sql = simpleDb.genSql();
+        /*
+        == rawSql ==
+        SELECT COUNT(*)
+        FROM article
+        WHERE id IN ('1', '2', '3')
+        */
+        sql.append("SELECT COUNT(*)")
+                .append("FROM article")
+                .appendIn("WHERE id IN (?)", 1, 2, 3);
+
+        long count = sql.selectLong();
+
+        assertThat(count).isEqualTo(3);
+    }
 //
 //    @Test
 //    @DisplayName("selectLongs, ORDER BY FIELD 사용법")

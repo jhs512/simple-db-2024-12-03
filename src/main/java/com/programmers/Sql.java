@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class Sql {
     private final Connection connection;
@@ -28,6 +29,12 @@ public class Sql {
     public Sql append(String query, Object... args){
         stringBuilder.append(" ").append(query);
         parameters.addAll(Arrays.asList(args));
+        return this;
+    }
+
+    public Sql appendIn(String query, Object... args){
+        String in = Arrays.stream(args).map(Object::toString).collect(Collectors.joining(","));
+        stringBuilder.append(" ").append(query.replace("IN (?)", "IN (" + in + ")"));
         return this;
     }
 
@@ -117,8 +124,15 @@ public class Sql {
 
     private <T> T select(Class<T> type){
         try(PreparedStatement preparedStatement = connection.prepareStatement(stringBuilder.toString())) {
+            for(int i = 0; i < parameters.size(); i++){
+                preparedStatement.setObject(i + 1, parameters.get(i));
+            }
             ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()){
+                Object result = resultSet.getObject(1);
+                if(type == Boolean.class && result instanceof Long){
+                    return type.cast(result.equals(1L));
+                }
                 return type.cast(resultSet.getObject(1));
             }else {
                 return null;
