@@ -9,7 +9,7 @@ public class SimpleDb {
     private final Connection connection;
 
 //    "localhost", "root", "lldj123414", "simpleDb__test"
-    public SimpleDb(String localhost, String id, String password, String database ) {
+    public SimpleDb(String localhost, String id, String password, String database) {
         try{
             connection = DriverManager.getConnection(String.format("jdbc:mysql://%s:3306/%s", localhost, database), id, password);
         }catch (SQLException e){

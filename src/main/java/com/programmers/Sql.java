@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -110,6 +111,19 @@ public class Sql {
                 row.put("isBlind", resultSet.getBoolean(6));
             }
             return row;
+        }catch (SQLException e){
+            throw new RuntimeException(e);
+        }
+    }
+
+    public LocalDateTime selectDatetime(){
+        try(PreparedStatement preparedStatement = connection.prepareStatement(stringBuilder.toString())) {
+            ResultSet resultSet = preparedStatement.executeQuery();
+            if(resultSet.next()){
+                return resultSet.getTimestamp(1).toLocalDateTime();
+            }else {
+                return null;
+            }
         }catch (SQLException e){
             throw new RuntimeException(e);
         }
