@@ -1,10 +1,6 @@
 package com.ll.simpleDb;
 
 public class Sql {
-    public Sql append(String sqlBit) {
-        return this;
-    }
-
     public Sql append(String sqlBit, Object... params) {
         return this;
     }
