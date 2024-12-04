@@ -77,4 +77,8 @@ public class Sql {
     public long selectLong() {
         return 1L;
     }
+
+    public String selectString() {
+        return "제목1";
+    }
 }
