@@ -191,6 +191,12 @@ public class SimpleDb {
                 .toList();
     }
 
+    public <T> T selectRow(String sql, Class<?> cls, Object... params) {
+        Map<String, Object> row = selectRow(sql, params);
+
+        return (T) Ut.mapper.mapToObj(row, cls);
+    }
+
     public int delete(String sql, Object... params) {
         return _run(sql, Integer.class, params);
     }
