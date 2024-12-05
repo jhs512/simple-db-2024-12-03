@@ -77,4 +77,8 @@ public class Sql {
     public boolean selectBoolean() {
         return simpleDb.selectBoolean(toSql(), params.toArray());
     }
+
+    public List<Long> selectLongs() {
+        return simpleDb.selectLongs(toSql(), params.toArray());
+    }
 }
