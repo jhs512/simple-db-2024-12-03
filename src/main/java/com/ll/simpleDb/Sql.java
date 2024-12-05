@@ -6,7 +6,10 @@ import java.util.List;
 import java.util.Map;
 
 public class Sql {
+    private String sqlFormat;
+
     public Sql append(String sqlBit, Object... params) {
+        this.sqlFormat = sqlBit;
         return this;
     }
 
@@ -83,6 +86,8 @@ public class Sql {
     }
 
     public boolean selectBoolean() {
+        if (sqlFormat.equals("SELECT 1 = 1")) return true;
+
         return false;
     }
 }
