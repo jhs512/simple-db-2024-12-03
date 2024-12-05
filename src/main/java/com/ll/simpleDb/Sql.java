@@ -84,7 +84,7 @@ public class Sql {
     }
 
     public long selectLong() {
-        return 1L;
+        return simpleDb.selectLong(sqlFormat.toString().trim());
     }
 
     public String selectString() {
