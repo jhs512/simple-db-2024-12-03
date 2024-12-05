@@ -2,10 +2,7 @@ package com.ll.simpleDb;
 
 import lombok.RequiredArgsConstructor;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.sql.*;
 
 @RequiredArgsConstructor
 public class SimpleDb {
@@ -62,6 +59,18 @@ public class SimpleDb {
     }
 
     public Sql genSql() {
-        return new Sql();
+        return new Sql(this);
+    }
+
+    public boolean selectBoolean(String sql) {
+        connect(); // 연결 초기화
+
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            ResultSet resultSet = preparedStatement.executeQuery();
+            resultSet.next();
+            return resultSet.getBoolean(1);
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to execute SQL: " + sql + ". Error: " + e.getMessage(), e);
+        }
     }
 }
