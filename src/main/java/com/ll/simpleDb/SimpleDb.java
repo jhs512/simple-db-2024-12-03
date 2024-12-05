@@ -166,4 +166,8 @@ public class SimpleDb {
     public List<Map<String, Object>> selectRows(String sql) {
         return _run(sql, List.class);
     }
+
+    public int delete(String sql, Object... params) {
+        return _run(sql, Integer.class, params);
+    }
 }
