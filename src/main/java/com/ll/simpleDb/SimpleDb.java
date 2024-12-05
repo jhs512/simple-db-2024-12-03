@@ -56,6 +56,71 @@ public class SimpleDb {
     }
 
     // SQL 실행 메서드
+    private Map<String, Object> parseResultSetToMap(ResultSet resultSet) throws SQLException {
+        ResultSetMetaData metaData = resultSet.getMetaData();
+        int columnCount = metaData.getColumnCount();
+
+        Map<String, Object> row = new LinkedHashMap<>();
+
+        for (int i = 1; i <= columnCount; i++) {
+            String columnName = metaData.getColumnLabel(i);
+            Object value;
+
+            switch (metaData.getColumnType(i)) {
+                case Types.BIGINT:
+                    value = resultSet.getLong(columnName);
+                    break;
+                case Types.TIMESTAMP:
+                    Timestamp timestamp = resultSet.getTimestamp(columnName);
+                    value = (timestamp != null) ? timestamp.toLocalDateTime() : null;
+                    break;
+                case Types.BOOLEAN:
+                    value = resultSet.getBoolean(columnName);
+                    break;
+                default:
+                    value = resultSet.getObject(columnName);
+                    break;
+            }
+
+            row.put(columnName, value);
+        }
+
+        return row;
+    }
+
+    private <T> T parseResultSet(ResultSet resultSet, Class cls) throws SQLException {
+        if (cls == String.class) {
+            resultSet.next();
+            return (T) resultSet.getString(1);
+        } else if (cls == List.class) {
+            List<Map<String, Object>> rows = new ArrayList<>();
+
+            while (resultSet.next()) {
+                rows.add(parseResultSetToMap(resultSet));
+            }
+
+            return (T) rows;
+        } else if (cls == Map.class) {
+            resultSet.next();
+
+            return (T) parseResultSetToMap(resultSet);
+        } else if (cls == LocalDateTime.class) {
+            resultSet.next();
+
+            return (T) resultSet.getTimestamp(1).toLocalDateTime();
+        } else if (cls == Long.class) {
+            resultSet.next();
+
+            return (T) (Long) resultSet.getLong(1);
+        } else if (cls == Boolean.class) {
+            resultSet.next();
+
+            return (T) (Boolean) resultSet.getBoolean(1);
+        }
+
+        throw new IllegalArgumentException("Unsupported class type: " + cls);
+    }
+
     private <T> T _run(String sql, Class cls, Object... params) {
         connect();
 
@@ -65,89 +130,7 @@ public class SimpleDb {
             if (sql.startsWith("SELECT")) {
                 ResultSet resultSet = preparedStatement.executeQuery();
 
-                if (cls == String.class) {
-                    resultSet.next();
-                    return (T) resultSet.getString(1);
-                } else if (cls == List.class) {
-                    List<Map<String, Object>> rows = new ArrayList<>();
-
-                    ResultSetMetaData metaData = resultSet.getMetaData();
-                    int columnCount = metaData.getColumnCount();
-
-                    while (resultSet.next()) {
-                        Map<String, Object> row = new LinkedHashMap<>();
-
-                        for (int i = 1; i <= columnCount; i++) {
-                            String columnName = metaData.getColumnLabel(i);
-                            Object value;
-
-                            switch (metaData.getColumnType(i)) {
-                                case Types.BIGINT:
-                                    value = resultSet.getLong(columnName);
-                                    break;
-                                case Types.TIMESTAMP:
-                                    Timestamp timestamp = resultSet.getTimestamp(columnName);
-                                    value = (timestamp != null) ? timestamp.toLocalDateTime() : null;
-                                    break;
-                                case Types.BOOLEAN:
-                                    value = resultSet.getBoolean(columnName);
-                                    break;
-                                default:
-                                    value = resultSet.getObject(columnName);
-                                    break;
-                            }
-
-                            row.put(columnName, value);
-                        }
-
-                        rows.add(row);
-                    }
-
-                    return (T) rows;
-                } else if (cls == Map.class) {
-                    resultSet.next();
-
-                    Map<String, Object> row = new LinkedHashMap<>();
-                    ResultSetMetaData metaData = resultSet.getMetaData();
-                    int columnCount = metaData.getColumnCount();
-
-                    for (int i = 1; i <= columnCount; i++) {
-                        String columnName = metaData.getColumnLabel(i);
-                        Object value;
-
-                        switch (metaData.getColumnType(i)) {
-                            case Types.BIGINT:
-                                value = resultSet.getLong(columnName);
-                                break;
-                            case Types.TIMESTAMP:
-                                Timestamp timestamp = resultSet.getTimestamp(columnName);
-                                value = (timestamp != null) ? timestamp.toLocalDateTime() : null;
-                                break;
-                            case Types.BOOLEAN:
-                                value = resultSet.getBoolean(columnName);
-                                break;
-                            default:
-                                value = resultSet.getObject(columnName);
-                                break;
-                        }
-
-                        row.put(columnName, value);
-                    }
-
-                    return (T) row;
-                } else if (cls == LocalDateTime.class) {
-                    resultSet.next();
-
-                    return (T) resultSet.getTimestamp(1).toLocalDateTime();
-                } else if (cls == Long.class) {
-                    resultSet.next();
-
-                    return (T) (Long) resultSet.getLong(1);
-                } else if (cls == Boolean.class) {
-                    resultSet.next();
-
-                    return (T) (Boolean) resultSet.getBoolean(1);
-                }
+                return parseResultSet(resultSet, cls);
             }
 
             return (T) (Integer) preparedStatement.executeUpdate();
