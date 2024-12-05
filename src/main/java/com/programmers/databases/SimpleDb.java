@@ -5,15 +5,23 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import lombok.Getter;
+import lombok.Setter;
 
+@Getter
 public class SimpleDb {
-    private final ConcurrentLinkedQueue<Connection> connectionPool = new ConcurrentLinkedQueue<>();
+    @Setter
+    private boolean devMode = false;
+    private final Queue<Connection> connectionPool = new ConcurrentLinkedDeque<>();
+
+    @Getter
+    private final ThreadLocal<Connection> threadLocalConnection = new ThreadLocal<>();
 
     public SimpleDb(String localhost, String id, String password, String database) {
-        int POOL_SIZE = 100;
+        int connectionPoolSize = 100;
         try {
-            for(int i = 0; i < POOL_SIZE; i++){
+            for(int i = 0; i < connectionPoolSize; i++){
                 connectionPool.add(DriverManager.getConnection(String.format("jdbc:mysql://%s:3306/%s", localhost, database), id, password));
             }
         }catch (SQLException e){
@@ -21,15 +29,7 @@ public class SimpleDb {
         }
     }
 
-    public void setDevMode(boolean devMode) {
-
-    }
-
-    public Queue<Connection> getConnectionPool() {
-        return connectionPool;
-    }
-
-    public synchronized Sql genSql(){
+    private Connection getConnectionFromPool(){
         int chance = 0;
         while(connectionPool.isEmpty()){
             try {
@@ -42,7 +42,21 @@ public class SimpleDb {
                 throw new RuntimeException(e);
             }
         }
-        return new Sql(this, connectionPool.poll());
+        return connectionPool.poll();
+    }
+
+    private Connection getConnection(){
+        Connection connection = threadLocalConnection.get();
+        if(connection == null){
+            connection = getConnectionFromPool();
+            threadLocalConnection.set(connection);
+        }
+        return connection;
+    }
+
+    public Sql genSql(){
+        Connection connection = getConnection();
+        return new Sql(this, connection);
     }
 
 
@@ -64,16 +78,40 @@ public class SimpleDb {
     }
 
     public void closeConnection(){
-        connectionPool
-                .forEach(c ->{
-                    try {
-                        if(!c.isClosed()){
-                            c.close();
-                        }
-                    }catch (SQLException e){
-                        connectionPool.remove(c);
-                        throw new RuntimeException(e);
-                    }
-                });
+
+    }
+
+    public void startTransaction(){
+        try{
+            Connection connection = getConnection();
+            connection.setAutoCommit(false);
+        }catch (SQLException e){
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void rollback(){
+        try{
+            Connection connection = getConnection();
+            connection.rollback();
+            connection.setAutoCommit(true);
+            connectionPool.offer(connection);
+        }catch (SQLException e){
+            throw new RuntimeException(e);
+        }finally {
+            threadLocalConnection.remove();
+        }
+    }
+
+    public void commit(){
+        try {
+            Connection connection = getConnection();
+            connection.commit();
+            connection.setAutoCommit(true);
+        }catch (SQLException e){
+            throw new RuntimeException(e);
+        }finally {
+            threadLocalConnection.remove();
+        }
     }
 }

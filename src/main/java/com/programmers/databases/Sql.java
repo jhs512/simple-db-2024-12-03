@@ -12,8 +12,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.Getter;
 
 public class Sql {
+    @Getter
     private final Connection connection;
     private final StringBuilder stringBuilder = new StringBuilder();
     private final List<Object> parameters = new ArrayList<>();
@@ -36,7 +38,15 @@ public class Sql {
     }
 
     public Sql appendIn(String query, Object... args){
-        String in = Arrays.stream(args).map(Object::toString).collect(Collectors.joining(","));
+        String in = Arrays.stream(args)
+                .map(obj -> {
+                    if(obj instanceof Number){
+                        return obj.toString();
+                    }else {
+                        return "\"" + obj.toString() + "\"";
+                    }
+                })
+                .collect(Collectors.joining(","));
         stringBuilder.append(" ").append(query.replace("?", in));
         return this;
     }
@@ -45,12 +55,16 @@ public class Sql {
         simpleDb.getConnectionPool().offer(connection);
     }
 
-    public synchronized long insert(){
+    private void setParameters(PreparedStatement ps) throws SQLException {
+        for (int i = 0; i < parameters.size(); i++) {
+            ps.setObject(i + 1, parameters.get(i));
+        }
+    }
+
+    public long insert(){
         try(PreparedStatement preparedStatement = connection.prepareStatement(stringBuilder.toString(),
                 PreparedStatement.RETURN_GENERATED_KEYS)){
-            for(int i = 0; i < parameters.size(); i++){
-                preparedStatement.setObject(i + 1, parameters.get(i));
-            }
+            setParameters(preparedStatement);
             preparedStatement.executeUpdate();
 
             ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
@@ -69,9 +83,7 @@ public class Sql {
 
     private long modify(){
         try(PreparedStatement preparedStatement = connection.prepareStatement(stringBuilder.toString())){
-            for(int i = 0; i < parameters.size(); i++){
-                preparedStatement.setObject(i + 1, parameters.get(i));
-            }
+            setParameters(preparedStatement);
             return preparedStatement.executeUpdate();
         }catch (SQLException e){
             throw new RuntimeException(e);
@@ -99,9 +111,7 @@ public class Sql {
 
     public List<Map<String, Object>> selectRows(){
         try(PreparedStatement preparedStatement = connection.prepareStatement(stringBuilder.toString())){
-            for(int i = 0; i < parameters.size(); i++){
-                preparedStatement.setObject(i + 1, parameters.get(i));
-            }
+            setParameters(preparedStatement);
             ResultSet resultSet = preparedStatement.executeQuery();
             List<Map<String, Object>> rows = new ArrayList<>();
 
@@ -120,9 +130,7 @@ public class Sql {
 
     public <T> List<T> selectRows(Class<T> type){
         try(PreparedStatement preparedStatement = connection.prepareStatement(stringBuilder.toString())){
-            for(int i = 0; i < parameters.size(); i++){
-                preparedStatement.setObject(i + 1, parameters.get(i));
-            }
+            setParameters(preparedStatement);
             ResultSet resultSet = preparedStatement.executeQuery();
             List<T> list = new ArrayList<>();
 
@@ -146,11 +154,9 @@ public class Sql {
         }
     }
 
-    public synchronized  <T> T selectRow(Class<T> type){
+    public  <T> T selectRow(Class<T> type){
         try(PreparedStatement preparedStatement = connection.prepareStatement(stringBuilder.toString())){
-            for(int i = 0; i < parameters.size(); i++){
-                preparedStatement.setObject(i + 1, parameters.get(i));
-            }
+            setParameters(preparedStatement);
             ResultSet resultSet = preparedStatement.executeQuery();
 
             if(resultSet.next()){
@@ -174,9 +180,7 @@ public class Sql {
 
     public Map<String, Object> selectRow(){
         try(PreparedStatement preparedStatement = connection.prepareStatement(stringBuilder.toString())){
-            for(int i = 0; i < parameters.size(); i++){
-                preparedStatement.setObject(i + 1, parameters.get(i));
-            }
+            setParameters(preparedStatement);
             ResultSet resultSet = preparedStatement.executeQuery();
             Map<String, Object> row = new HashMap<>();
 
@@ -195,9 +199,7 @@ public class Sql {
 
     private <T> T select(Class<T> type){
         try(PreparedStatement preparedStatement = connection.prepareStatement(stringBuilder.toString())) {
-            for(int i = 0; i < parameters.size(); i++){
-                preparedStatement.setObject(i + 1, parameters.get(i));
-            }
+            setParameters(preparedStatement);
             ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()){
                 Object result = resultSet.getObject(1);
@@ -225,9 +227,7 @@ public class Sql {
 
     public List<Long> selectLongs(){
         try(PreparedStatement preparedStatement = connection.prepareStatement(stringBuilder.toString())){
-            for(int i = 0; i < parameters.size(); i++){
-                preparedStatement.setObject(i + 1, parameters.get(i));
-            }
+            setParameters(preparedStatement);
             ResultSet resultSet = preparedStatement.executeQuery();
             List<Long> rows = new ArrayList<>();
             while(resultSet.next()){
