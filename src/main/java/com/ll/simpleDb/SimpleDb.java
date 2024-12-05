@@ -51,7 +51,7 @@ public class SimpleDb {
     }
 
     // SQL 실행 메서드
-    private Object _run(String sql, Class cls, Object... params) {
+    private <T> T _run(String sql, Class cls, Object... params) {
         connect();
 
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
@@ -62,27 +62,27 @@ public class SimpleDb {
                 resultSet.next();
 
                 if (cls == String.class) {
-                    return resultSet.getString(1);
+                    return (T) resultSet.getString(1);
                 } else if (cls == Boolean.class) {
-                    return resultSet.getBoolean(1);
+                    return (T) (Boolean) resultSet.getBoolean(1);
                 }
             }
 
-            return preparedStatement.executeUpdate();
+            return (T) (Integer) preparedStatement.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException("Failed to execute SQL: " + sql + ". Error: " + e.getMessage(), e);
         }
     }
 
     public int run(String sql, Object... params) {
-        return (int) _run(sql, Integer.class, params);
+        return _run(sql, Integer.class, params);
     }
 
     public boolean selectBoolean(String sql) {
-        return (boolean) _run(sql, Boolean.class);
+        return _run(sql, Boolean.class);
     }
 
     public String selectString(String sql) {
-        return (String) _run(sql, String.class);
+        return _run(sql, String.class);
     }
 }
