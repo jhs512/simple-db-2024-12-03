@@ -14,15 +14,14 @@ public class SimpleDb {
     private final String dbName;
     private Connection connection;
 
+    // 현재는 항상 true로 설정 (개발 환경 확인)
     private boolean isNotProdMode() {
-        return true;
+        return true; // 배포 환경에서 false로 설정할 수 있음
     }
 
     // 데이터베이스 연결 초기화
     private void connect() {
-        if (connection != null) {
-            return; // 이미 연결되어 있으면 아무 작업도 하지 않음
-        }
+        if (connection != null) return;
 
         String url = String.format("jdbc:mysql://%s/%s?useSSL=false", host, dbName);
         try {
@@ -34,9 +33,7 @@ public class SimpleDb {
 
     // 자원 해제
     public void close() {
-        if (connection == null) {
-            return; // 연결이 없는 경우 아무 작업도 하지 않음
-        }
+        if (connection == null) return;
 
         try {
             connection.close();
@@ -49,107 +46,87 @@ public class SimpleDb {
         return new Sql(this);
     }
 
-    // SQL과 파라미터를 입력받아 치환된 SQL 반환
+    // SQL에 파라미터를 적용한 raw SQL 생성
     private String rawSql(String sql, Object[] params) {
         StringBuilder processedSql = new StringBuilder(sql);
-        int lastIndex = 0;
+        int index = 0;
 
         for (Object param : params) {
-            lastIndex = processedSql.indexOf("?", lastIndex);
-            if (lastIndex == -1) break; // 더 이상 치환할 물음표가 없으면 중단
+            index = processedSql.indexOf("?", index);
+            if (index == -1) break;
 
-            String replacement = formatRawSqlParam(param); // 파라미터 포맷 처리
-            processedSql.replace(lastIndex, lastIndex + 1, replacement);
-            lastIndex += replacement.length();
+            String replacement = formatRawSqlParam(param);
+            processedSql.replace(index, index + 1, replacement);
+            index += replacement.length();
         }
 
         return processedSql.toString();
     }
 
-    // 파라미터에 따라 적절한 SQL 값으로 변환
+    // 파라미터를 적절한 SQL 값으로 변환
     private String formatRawSqlParam(Object param) {
-        if (param instanceof Boolean) {
-            return param.toString().toUpperCase(); // Boolean을 대문자로
+        if (param == null) return "NULL";
+        if (param instanceof Boolean) return param.toString().toUpperCase();
+        if (param instanceof Number) return param.toString();
+        if (param instanceof String || param instanceof LocalDateTime) {
+            return "'" + param.toString().replace("'", "''") + "'";
         }
-        return "'" + Objects.toString(param, "") + "'"; // 문자열로 변환
+        return "'" + Objects.toString(param, "") + "'";
     }
 
-    // PreparedStatement 파라미터 바인딩 분리
-    private void bindParameters(PreparedStatement preparedStatement, Object... params) throws SQLException {
+    // PreparedStatement 파라미터 바인딩
+    private void bindParameters(PreparedStatement preparedStatement, Object[] params) throws SQLException {
         for (int i = 0; i < params.length; i++) {
             preparedStatement.setObject(i + 1, params[i]);
         }
     }
 
-    // SQL 실행 메서드
+    // ResultSet을 Map으로 변환
     private Map<String, Object> parseResultSetToMap(ResultSet resultSet) throws SQLException {
         ResultSetMetaData metaData = resultSet.getMetaData();
         int columnCount = metaData.getColumnCount();
 
         Map<String, Object> row = new LinkedHashMap<>();
-
         for (int i = 1; i <= columnCount; i++) {
             String columnName = metaData.getColumnLabel(i);
-            Object value;
-
-            switch (metaData.getColumnType(i)) {
-                case Types.BIGINT:
-                    value = resultSet.getLong(columnName);
-                    break;
-                case Types.TIMESTAMP:
+            Object value = switch (metaData.getColumnType(i)) {
+                case Types.BIGINT -> resultSet.getLong(columnName);
+                case Types.TIMESTAMP -> {
                     Timestamp timestamp = resultSet.getTimestamp(columnName);
-                    value = (timestamp != null) ? timestamp.toLocalDateTime() : null;
-                    break;
-                case Types.BOOLEAN:
-                    value = resultSet.getBoolean(columnName);
-                    break;
-                default:
-                    value = resultSet.getObject(columnName);
-                    break;
-            }
-
+                    yield (timestamp != null) ? timestamp.toLocalDateTime() : null;
+                }
+                case Types.BOOLEAN -> resultSet.getBoolean(columnName);
+                default -> resultSet.getObject(columnName);
+            };
             row.put(columnName, value);
         }
-
         return row;
     }
 
-    private <T> T parseResultSet(ResultSet resultSet, Class cls) throws SQLException {
-        if (cls == String.class) {
-            resultSet.next();
-            return (T) resultSet.getString(1);
-        } else if (cls == List.class) {
-            List<Map<String, Object>> rows = new ArrayList<>();
+    // ResultSet 파싱 (다양한 클래스 타입 지원)
+    private <T> T parseResultSet(ResultSet resultSet, Class<T> cls) throws SQLException {
+        if (!resultSet.next()) throw new NoSuchElementException("No data found");
 
-            while (resultSet.next()) {
-                rows.add(parseResultSetToMap(resultSet));
+        return switch (cls.getSimpleName()) {
+            case "String" -> (T) resultSet.getString(1);
+            case "List" -> {
+                List<Map<String, Object>> rows = new ArrayList<>();
+                do {
+                    rows.add(parseResultSetToMap(resultSet));
+                } while (resultSet.next());
+                yield (T) rows;
             }
-
-            return (T) rows;
-        } else if (cls == Map.class) {
-            resultSet.next();
-
-            return (T) parseResultSetToMap(resultSet);
-        } else if (cls == LocalDateTime.class) {
-            resultSet.next();
-
-            return (T) resultSet.getTimestamp(1).toLocalDateTime();
-        } else if (cls == Long.class) {
-            resultSet.next();
-
-            return (T) (Long) resultSet.getLong(1);
-        } else if (cls == Boolean.class) {
-            resultSet.next();
-
-            return (T) (Boolean) resultSet.getBoolean(1);
-        }
-
-        throw new IllegalArgumentException("Unsupported class type: " + cls);
+            case "Map" -> (T) parseResultSetToMap(resultSet);
+            case "LocalDateTime" -> (T) resultSet.getTimestamp(1).toLocalDateTime();
+            case "Long" -> (T) (Long) resultSet.getLong(1);
+            case "Boolean" -> (T) (Boolean) resultSet.getBoolean(1);
+            default -> throw new IllegalArgumentException("Unsupported class type: " + cls.getSimpleName());
+        };
     }
 
-    private <T> T _run(String sql, Class cls, Object... params) {
+    // 내부 SQL 실행 메서드
+    private <T> T _run(String sql, Class<T> cls, Object... params) {
         connect();
-
         sql = sql.trim();
 
         if (isNotProdMode()) {
@@ -157,38 +134,24 @@ public class SimpleDb {
             System.out.println(rawSql(sql, params));
         }
 
-        if (sql.startsWith("INSERT")) {
-            try (PreparedStatement preparedStatement = connection.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
-                bindParameters(preparedStatement, params);
-
-                int affectedRows = preparedStatement.executeUpdate();
-
-                if (cls == Integer.class) {
-                    return (T) (Integer) affectedRows;
-                }
-
-                ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
-                if (generatedKeys.next()) {
-                    return (T) (Long) generatedKeys.getLong(1);
-                }
-
-            } catch (SQLException e) {
-                throw new RuntimeException("Failed to execute SQL: " + sql + ". Error: " + e.getMessage(), e);
-            }
-        }
-
-        try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
             bindParameters(preparedStatement, params);
 
-            if (sql.startsWith("SELECT")) {
-                ResultSet resultSet = preparedStatement.executeQuery();
+            if (sql.startsWith("INSERT")) {
+                preparedStatement.executeUpdate();
+                ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
+                return (generatedKeys.next() && cls == Long.class) ? (T) (Long) generatedKeys.getLong(1) : (T) (Integer) preparedStatement.getUpdateCount();
+            }
 
-                return parseResultSet(resultSet, cls);
+            if (sql.startsWith("SELECT")) {
+                try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                    return parseResultSet(resultSet, cls);
+                }
             }
 
             return (T) (Integer) preparedStatement.executeUpdate();
         } catch (SQLException e) {
-            throw new RuntimeException("Failed to execute SQL: " + sql + ". Error: " + e.getMessage(), e);
+            throw new RuntimeException("SQL Execution failed: " + e.getMessage(), e);
         }
     }
 
