@@ -88,7 +88,7 @@ public class Sql {
     }
 
     public String selectString() {
-        return "제목1";
+        return simpleDb.selectString(sqlFormat.toString().trim());
     }
 
     public boolean selectBoolean() {
