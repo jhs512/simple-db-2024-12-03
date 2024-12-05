@@ -124,6 +124,11 @@ public class SimpleDb {
     private <T> T _run(String sql, Class cls, Object... params) {
         connect();
 
+        if (isNotProdMode()) {
+            System.out.println("== rawSql ==");
+            System.out.println(sql);
+        }
+
         if (sql.startsWith("INSERT")) {
             try (PreparedStatement preparedStatement = connection.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
                 bindParameters(preparedStatement, params);
@@ -157,6 +162,10 @@ public class SimpleDb {
         } catch (SQLException e) {
             throw new RuntimeException("Failed to execute SQL: " + sql + ". Error: " + e.getMessage(), e);
         }
+    }
+
+    private boolean isNotProdMode() {
+        return true;
     }
 
     public int run(String sql, Object... params) {

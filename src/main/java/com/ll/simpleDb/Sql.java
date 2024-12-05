@@ -17,7 +17,7 @@ public class Sql {
     }
 
     public Sql append(String sqlBit, Object... params) {
-        this.sqlFormat.append(" " + sqlBit);
+        this.sqlFormat.append("\n" + sqlBit);
 
         for (Object param : params) {
             this.params.add(param);
