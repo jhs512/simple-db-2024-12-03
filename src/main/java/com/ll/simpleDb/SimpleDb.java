@@ -124,6 +124,26 @@ public class SimpleDb {
     private <T> T _run(String sql, Class cls, Object... params) {
         connect();
 
+        if (sql.startsWith("INSERT")) {
+            try (PreparedStatement preparedStatement = connection.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+                bindParameters(preparedStatement, params);
+
+                int affectedRows = preparedStatement.executeUpdate();
+
+                if (cls == Integer.class) {
+                    return (T) (Integer) affectedRows;
+                }
+
+                ResultSet generatedKeys = preparedStatement.getGeneratedKeys();
+                if (generatedKeys.next()) {
+                    return (T) (Long) generatedKeys.getLong(1);
+                }
+
+            } catch (SQLException e) {
+                throw new RuntimeException("Failed to execute SQL: " + sql + ". Error: " + e.getMessage(), e);
+            }
+        }
+
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             bindParameters(preparedStatement, params);
 
@@ -173,5 +193,9 @@ public class SimpleDb {
 
     public int update(String sql, Object[] params) {
         return _run(sql, Integer.class, params);
+    }
+
+    public long insert(String sql, Object[] params) {
+        return _run(sql, Long.class, params);
     }
 }
