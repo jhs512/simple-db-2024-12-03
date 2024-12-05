@@ -35,7 +35,7 @@ public class Sql {
     }
 
     public int update() {
-        return 3;
+        return simpleDb.update(toSql(), params.toArray());
     }
 
     public int delete() {
