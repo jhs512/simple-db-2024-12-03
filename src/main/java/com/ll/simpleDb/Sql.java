@@ -1,5 +1,7 @@
 package com.ll.simpleDb;
 
+import com.ll.simpleDb.standard.util.Ut;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -86,7 +88,7 @@ public class Sql {
         return simpleDb
                 .selectRows(toSql(), params.toArray())
                 .stream()
-                .map(row -> (T) new Article(row))
+                .map(row -> (T) Ut.mapper.mapToObj(row, cls))
                 .toList();
     }
 }
