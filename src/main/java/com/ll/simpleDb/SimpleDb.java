@@ -143,28 +143,28 @@ public class SimpleDb {
         return _run(sql, Integer.class, params);
     }
 
-    public boolean selectBoolean(String sql) {
-        return _run(sql, Boolean.class);
+    public boolean selectBoolean(String sql, Object... params) {
+        return _run(sql, Boolean.class, params);
     }
 
-    public String selectString(String sql) {
-        return _run(sql, String.class);
+    public String selectString(String sql, Object... params) {
+        return _run(sql, String.class, params);
     }
 
-    public long selectLong(String sql) {
-        return _run(sql, Long.class);
+    public long selectLong(String sql, Object... params) {
+        return _run(sql, Long.class, params);
     }
 
-    public LocalDateTime selectDatetime(String sql) {
-        return _run(sql, LocalDateTime.class);
+    public LocalDateTime selectDatetime(String sql, Object... params) {
+        return _run(sql, LocalDateTime.class, params);
     }
 
-    public Map<String, Object> selectRow(String sql) {
-        return _run(sql, Map.class);
+    public Map<String, Object> selectRow(String sql, Object... params) {
+        return _run(sql, Map.class, params);
     }
 
-    public List<Map<String, Object>> selectRows(String sql) {
-        return _run(sql, List.class);
+    public List<Map<String, Object>> selectRows(String sql, Object... params) {
+        return _run(sql, List.class, params);
     }
 
     public int delete(String sql, Object... params) {

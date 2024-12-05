@@ -26,6 +26,10 @@ public class Sql {
         return this;
     }
 
+    private String toSql() {
+        return sqlFormat.toString().trim();
+    }
+
     public long insert() {
         return 1;
     }
@@ -35,30 +39,30 @@ public class Sql {
     }
 
     public int delete() {
-        return simpleDb.delete(sqlFormat.toString().trim(), params.toArray());
+        return simpleDb.delete(toSql(), params.toArray());
     }
 
     public List<Map<String, Object>> selectRows() {
-        return simpleDb.selectRows(sqlFormat.toString().trim());
+        return simpleDb.selectRows(toSql(), params.toArray());
     }
 
     public Map<String, Object> selectRow() {
-        return simpleDb.selectRow(sqlFormat.toString().trim());
+        return simpleDb.selectRow(toSql(), params.toArray());
     }
 
     public LocalDateTime selectDatetime() {
-        return simpleDb.selectDatetime(sqlFormat.toString().trim());
+        return simpleDb.selectDatetime(toSql(), params.toArray());
     }
 
     public long selectLong() {
-        return simpleDb.selectLong(sqlFormat.toString().trim());
+        return simpleDb.selectLong(toSql(), params.toArray());
     }
 
     public String selectString() {
-        return simpleDb.selectString(sqlFormat.toString().trim());
+        return simpleDb.selectString(toSql(), params.toArray());
     }
 
     public boolean selectBoolean() {
-        return simpleDb.selectBoolean(sqlFormat.toString().trim());
+        return simpleDb.selectBoolean(toSql(), params.toArray());
     }
 }
