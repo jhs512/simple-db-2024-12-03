@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import lombok.Getter;
@@ -29,7 +30,7 @@ public class SimpleDb {
         }
     }
 
-    private Connection getConnectionFromPool(){
+    private synchronized Connection getConnectionFromPool(){
         int chance = 0;
         while(connectionPool.isEmpty()){
             try {
@@ -37,8 +38,9 @@ public class SimpleDb {
                 if(chance > 10){
                     throw new RuntimeException("Connection Time out");
                 }
-                Thread.sleep(500);
+                wait();
             }catch (InterruptedException e){
+                Thread.currentThread().interrupt();
                 throw new RuntimeException(e);
             }
         }
@@ -61,9 +63,9 @@ public class SimpleDb {
 
 
     public void run(Object... sql){
-        Connection connection = connectionPool.poll();
+        Connection connection = getConnection();
         String query = String.valueOf(sql[0]);
-        try (PreparedStatement preparedStatement = connection.prepareStatement(query)){
+        try (PreparedStatement preparedStatement = Objects.requireNonNull(connection).prepareStatement(query)){
             if(sql.length > 1){
                 for (int i = 1; i < sql.length; i++) {
                     preparedStatement.setObject(i, sql[i]);
@@ -73,13 +75,11 @@ public class SimpleDb {
         }catch (SQLException e){
             throw new RuntimeException(e);
         }finally {
-            connectionPool.add(connection);
+            connectionPool.offer(connection);
+            threadLocalConnection.remove();
         }
     }
 
-    public void closeConnection(){
-
-    }
 
     public void startTransaction(){
         try{
@@ -90,12 +90,23 @@ public class SimpleDb {
         }
     }
 
+    private Connection nullCheckedConnection(){
+        Connection connection = threadLocalConnection.get();
+        if(connection == null){
+            throw new RuntimeException("Connection is null");
+        }
+        return connection;
+    }
+    public void closeConnection(){
+        Connection connection = nullCheckedConnection();
+        connectionPool.offer(connection);
+        threadLocalConnection.remove();
+    }
+
     public void rollback(){
-        try{
-            Connection connection = getConnection();
+        try(Connection connection = nullCheckedConnection()){
             connection.rollback();
             connection.setAutoCommit(true);
-            connectionPool.offer(connection);
         }catch (SQLException e){
             throw new RuntimeException(e);
         }finally {
@@ -104,8 +115,7 @@ public class SimpleDb {
     }
 
     public void commit(){
-        try {
-            Connection connection = getConnection();
+        try(Connection connection = nullCheckedConnection()){
             connection.commit();
             connection.setAutoCommit(true);
         }catch (SQLException e){

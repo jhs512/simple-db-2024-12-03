@@ -128,6 +128,19 @@ public class Sql {
         }
     }
 
+    private <T> T makeObject(ResultSet resultSet, Class<T> type)
+            throws Exception {
+        T object = type.getDeclaredConstructor().newInstance();
+
+        for (Field field : type.getDeclaredFields()) {
+            field.setAccessible(true);
+            Object value = resultSet.getObject(field.getName());
+            field.set(object, value);
+            field.setAccessible(false);
+        }
+        return object;
+    }
+
     public <T> List<T> selectRows(Class<T> type){
         try(PreparedStatement preparedStatement = connection.prepareStatement(stringBuilder.toString())){
             setParameters(preparedStatement);
@@ -135,19 +148,11 @@ public class Sql {
             List<T> list = new ArrayList<>();
 
             while(resultSet.next()){
-                T instance = type.getDeclaredConstructor().newInstance();
-
-                for (Field field : type.getDeclaredFields()) {
-                    field.setAccessible(true);
-                    Object value = resultSet.getObject(field.getName());
-                    field.set(instance, value);
-                    field.setAccessible(false);
-                }
-
-                list.add(instance);  // 리스트
+                T object = makeObject(resultSet, type);
+                list.add(object);  // 리스트
             }
             return list;
-        }catch (SQLException | ReflectiveOperationException e){
+        }catch (Exception e){
             throw new RuntimeException(e);
         }finally {
             returnConnection();
@@ -158,20 +163,11 @@ public class Sql {
         try(PreparedStatement preparedStatement = connection.prepareStatement(stringBuilder.toString())){
             setParameters(preparedStatement);
             ResultSet resultSet = preparedStatement.executeQuery();
-
             if(resultSet.next()){
-                T instance = type.getDeclaredConstructor().newInstance();
-
-                for (Field field : type.getDeclaredFields()) {
-                    field.setAccessible(true);
-                    Object value = resultSet.getObject(field.getName());
-                    field.set(instance, value);
-                    field.setAccessible(false);
-                }
-                return instance;
+                return makeObject(resultSet, type);
             }
             return null;
-        }catch (SQLException | ReflectiveOperationException e){
+        }catch (Exception e){
             throw new RuntimeException(e);
         }finally {
             returnConnection();
