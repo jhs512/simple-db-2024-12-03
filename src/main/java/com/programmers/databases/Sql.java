@@ -17,8 +17,10 @@ public class Sql {
     private final Connection connection;
     private final StringBuilder stringBuilder = new StringBuilder();
     private final List<Object> parameters = new ArrayList<>();
+    private final SimpleDb simpleDb;
 
-    public Sql(Connection connection) {
+    public Sql(SimpleDb simpleDb, Connection connection) {
+        this.simpleDb = simpleDb;
         this.connection = connection;
     }
 
@@ -39,7 +41,11 @@ public class Sql {
         return this;
     }
 
-    public long insert(){
+    private void returnConnection(){
+        simpleDb.getConnectionPool().offer(connection);
+    }
+
+    public synchronized long insert(){
         try(PreparedStatement preparedStatement = connection.prepareStatement(stringBuilder.toString(),
                 PreparedStatement.RETURN_GENERATED_KEYS)){
             for(int i = 0; i < parameters.size(); i++){
@@ -56,6 +62,8 @@ public class Sql {
             }
         }catch (SQLException e){
             throw new RuntimeException(e);
+        }finally {
+            returnConnection();
         }
     }
 
@@ -67,6 +75,8 @@ public class Sql {
             return preparedStatement.executeUpdate();
         }catch (SQLException e){
             throw new RuntimeException(e);
+        }finally {
+            returnConnection();
         }
     }
 
@@ -103,6 +113,8 @@ public class Sql {
             return rows;
         }catch (SQLException e){
             throw new RuntimeException(e);
+        }finally {
+            returnConnection();
         }
     }
 
@@ -129,6 +141,34 @@ public class Sql {
             return list;
         }catch (SQLException | ReflectiveOperationException e){
             throw new RuntimeException(e);
+        }finally {
+            returnConnection();
+        }
+    }
+
+    public synchronized  <T> T selectRow(Class<T> type){
+        try(PreparedStatement preparedStatement = connection.prepareStatement(stringBuilder.toString())){
+            for(int i = 0; i < parameters.size(); i++){
+                preparedStatement.setObject(i + 1, parameters.get(i));
+            }
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            if(resultSet.next()){
+                T instance = type.getDeclaredConstructor().newInstance();
+
+                for (Field field : type.getDeclaredFields()) {
+                    field.setAccessible(true);
+                    Object value = resultSet.getObject(field.getName());
+                    field.set(instance, value);
+                    field.setAccessible(false);
+                }
+                return instance;
+            }
+            return null;
+        }catch (SQLException | ReflectiveOperationException e){
+            throw new RuntimeException(e);
+        }finally {
+            returnConnection();
         }
     }
 
@@ -146,8 +186,12 @@ public class Sql {
             return row;
         }catch (SQLException e){
             throw new RuntimeException(e);
+        }finally {
+            returnConnection();
         }
     }
+
+
 
     private <T> T select(Class<T> type){
         try(PreparedStatement preparedStatement = connection.prepareStatement(stringBuilder.toString())) {
@@ -166,6 +210,8 @@ public class Sql {
             }
         }catch (SQLException e){
             throw new RuntimeException(e);
+        }finally {
+            returnConnection();
         }
     }
 
@@ -190,6 +236,8 @@ public class Sql {
             return rows;
         }catch (SQLException e){
             throw new RuntimeException(e);
+        }finally {
+            returnConnection();
         }
     }
 
@@ -200,4 +248,5 @@ public class Sql {
     public Boolean selectBoolean(){
         return select(Boolean.class);
     }
+
 }
