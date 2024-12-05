@@ -1,5 +1,6 @@
 package com.ll.simpleDb;
 
+import com.ll.simpleDb.standard.util.Ut;
 import lombok.RequiredArgsConstructor;
 
 import java.sql.*;
@@ -181,6 +182,13 @@ public class SimpleDb {
 
     public List<Map<String, Object>> selectRows(String sql, Object... params) {
         return _run(sql, List.class, params);
+    }
+
+    public <T> List<T> selectRows(String sql, Class<?> cls, Object... params) {
+        return selectRows(sql, params)
+                .stream()
+                .map(row -> (T) Ut.mapper.mapToObj(row, cls))
+                .toList();
     }
 
     public int delete(String sql, Object... params) {
