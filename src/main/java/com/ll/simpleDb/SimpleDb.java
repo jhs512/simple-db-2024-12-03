@@ -124,9 +124,11 @@ public class SimpleDb {
     private <T> T _run(String sql, Class cls, Object... params) {
         connect();
 
+        sql = sql.trim();
+
         if (isNotProdMode()) {
             System.out.println("== rawSql ==");
-            System.out.println(sql);
+            System.out.println(rawSql(sql, params));
         }
 
         if (sql.startsWith("INSERT")) {
@@ -162,6 +164,35 @@ public class SimpleDb {
         } catch (SQLException e) {
             throw new RuntimeException("Failed to execute SQL: " + sql + ". Error: " + e.getMessage(), e);
         }
+    }
+
+    private String rawSql(String sql, Object[] params) {
+        StringBuilder processedSql = new StringBuilder(sql);
+
+        int lastIndex = 0;
+
+        for (Object param : params) {
+            lastIndex = processedSql.indexOf("?", lastIndex);
+
+            if (lastIndex == -1) {
+                // 더 이상 치환할 물음표가 없으면 반복 중단
+                break;
+            }
+
+            String replacement;
+
+            // 그 외의 경우, 단순 문자열로 변환
+            if (param instanceof Boolean) {
+                replacement = param.toString().toUpperCase();
+            } else {
+                replacement = "'" + param.toString() + "'";
+            }
+
+            processedSql.replace(lastIndex, lastIndex + 1, replacement);
+            lastIndex += replacement.length();
+        }
+
+        return processedSql.toString();
     }
 
     private boolean isNotProdMode() {
