@@ -32,40 +32,7 @@ public class Sql {
     }
 
     public List<Map<String, Object>> selectRows() {
-        return new ArrayList<>() {{
-            add(
-                    Map.of(
-                            "id", 1L,
-                            "createdDate", LocalDateTime.now(),
-                            "modifiedDate", LocalDateTime.now(),
-                            "title", "제목1",
-                            "body", "내용1",
-                            "isBlind", false
-                    )
-            );
-
-            add(
-                    Map.of(
-                            "id", 2L,
-                            "createdDate", LocalDateTime.now(),
-                            "modifiedDate", LocalDateTime.now(),
-                            "title", "제목2",
-                            "body", "내용2",
-                            "isBlind", false
-                    )
-            );
-
-            add(
-                    Map.of(
-                            "id", 3L,
-                            "createdDate", LocalDateTime.now(),
-                            "modifiedDate", LocalDateTime.now(),
-                            "title", "제목3",
-                            "body", "내용3",
-                            "isBlind", false
-                    )
-            );
-        }};
+        return simpleDb.selectRows(sqlFormat.toString().trim());
     }
 
     public Map<String, Object> selectRow() {
