@@ -227,4 +227,20 @@ public class SimpleDb {
                 .map(row -> (Long) row.values().iterator().next())
                 .toList();
     }
+
+    public void startTransaction() {
+        try {
+            getCurrentThreadConnection().setAutoCommit(false);
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to start transaction: " + e.getMessage(), e);
+        }
+    }
+
+    public void rollback() {
+        try {
+            getCurrentThreadConnection().rollback();
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to rollback transaction: " + e.getMessage(), e);
+        }
+    }
 }
