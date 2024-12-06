@@ -239,8 +239,18 @@ public class SimpleDb {
     public void rollback() {
         try {
             getCurrentThreadConnection().rollback();
+            getCurrentThreadConnection().setAutoCommit(true);
         } catch (SQLException e) {
             throw new RuntimeException("Failed to rollback transaction: " + e.getMessage(), e);
+        }
+    }
+
+    public void commit() {
+        try {
+            getCurrentThreadConnection().commit();
+            getCurrentThreadConnection().setAutoCommit(true);
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to commit transaction: " + e.getMessage(), e);
         }
     }
 }
