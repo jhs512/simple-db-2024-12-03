@@ -38,9 +38,8 @@ public class SimpleDb {
                 if(chance > 10){
                     throw new RuntimeException("Connection Time out");
                 }
-                wait();
+                Thread.sleep(500);
             }catch (InterruptedException e){
-                Thread.currentThread().interrupt();
                 throw new RuntimeException(e);
             }
         }
