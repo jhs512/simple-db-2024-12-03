@@ -5,6 +5,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -63,7 +64,7 @@ public class Sql {
 
     public long insert(){
         try(PreparedStatement preparedStatement = connection.prepareStatement(stringBuilder.toString(),
-                PreparedStatement.RETURN_GENERATED_KEYS)){
+                Statement.RETURN_GENERATED_KEYS)){
             setParameters(preparedStatement);
             preparedStatement.executeUpdate();
 
