@@ -8,12 +8,12 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 @RequiredArgsConstructor
-public class SimpleDb {
+public class SimpleDb implements AutoCloseable {
     private final String host;
     private final String username;
     private final String password;
     private final String dbName;
-    private Map<String, Connection> connections = new HashMap<>();
+    private final ThreadLocal<Connection> connectionThreadLocal = new ThreadLocal<>();
 
     // 현재는 항상 true로 설정 (개발 환경 확인)
     private boolean isNotProdMode() {
@@ -21,24 +21,24 @@ public class SimpleDb {
     }
 
     private Connection getCurrentThreadConnection() {
-        Connection connection = connections.get(Thread.currentThread().getName());
+        Connection connection = connectionThreadLocal.get();
 
         if (connection != null) return connection;
 
-        String url = String.format("jdbc:mysql://%s/%s?useSSL=false", host, dbName);
+        String url = String.format("jdbc:mysql://%s/%s?useSSL=false&allowPublicKeyRetrieval=true", host, dbName);
         try {
             connection = DriverManager.getConnection(url, username, password);
         } catch (SQLException e) {
             throw new RuntimeException("Failed to connect to database: " + e.getMessage(), e);
         }
 
-        connections.put(Thread.currentThread().getName(), connection);
+        connectionThreadLocal.set(connection);
 
         return connection;
     }
 
     private void clearCurrentThreadConnection() {
-        Connection connection = connections.get(Thread.currentThread().getName());
+        Connection connection = connectionThreadLocal.get();
 
         if (connection == null) return;
 
@@ -47,11 +47,12 @@ public class SimpleDb {
         } catch (SQLException e) {
             throw new RuntimeException("Failed to close database connection: " + e.getMessage(), e);
         } finally {
-            connections.remove(Thread.currentThread().getName());
+            connectionThreadLocal.remove();
         }
     }
 
     // 자원 해제
+    @Override
     public void close() {
         clearCurrentThreadConnection();
     }
